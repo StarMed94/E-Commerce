@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { supabase, CartItem, Product } from '../lib/supabase';
+import { supabase, CartItem } from '../lib/supabase';
+import { useAuthStore } from './authStore';
 
 interface CartState {
   items: CartItem[];
@@ -18,24 +19,48 @@ export const useCartStore = create<CartState>((set, get) => ({
   loading: false,
 
   fetchCartItems: async () => {
-    set({ loading: true });
-    const { data } = await supabase
-      .from('cart_items')
-      .select(`
-        *,
-        product:products(*)
-      `)
-      .order('created_at', { ascending: false });
+    const { user } = useAuthStore.getState();
+    if (!user) {
+      set({ items: [], loading: false });
+      return;
+    }
 
-    set({ items: data || [], loading: false });
+    set({ loading: true });
+    try {
+      const { data, error } = await supabase
+        .from('cart_items')
+        .select(`
+          *,
+          product:products(*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching cart items:', error);
+        set({ items: [], loading: false });
+        return;
+      }
+
+      set({ items: data || [], loading: false });
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
+      set({ items: [], loading: false });
+    }
   },
 
   addToCart: async (productId: string, quantity = 1) => {
+    const { user } = useAuthStore.getState();
+    if (!user) {
+      return { error: 'يجب تسجيل الدخول أولاً' };
+    }
+
     try {
       // Check if item already exists in cart
       const { data: existingItem } = await supabase
         .from('cart_items')
         .select('*')
+        .eq('user_id', user.id)
         .eq('product_id', productId)
         .single();
 
@@ -51,7 +76,11 @@ export const useCartStore = create<CartState>((set, get) => ({
         // Insert new item
         const { error } = await supabase
           .from('cart_items')
-          .insert({ product_id: productId, quantity });
+          .insert({ 
+            user_id: user.id,
+            product_id: productId, 
+            quantity 
+          });
 
         if (error) return { error: error.message };
       }
@@ -100,10 +129,13 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   clearCart: async () => {
+    const { user } = useAuthStore.getState();
+    if (!user) return;
+
     const { error } = await supabase
       .from('cart_items')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      .eq('user_id', user.id);
 
     if (!error) {
       set({ items: [] });

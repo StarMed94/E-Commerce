@@ -2,10 +2,15 @@ import { Tabs } from 'expo-router';
 import { Home, ShoppingBag, ShoppingCart, User } from 'lucide-react-native';
 import { useCartStore } from '../../stores/cartStore';
 import { Text, View } from 'react-native';
+import { useEffect } from 'react';
 
 export default function TabLayout() {
-  const { getTotalItems } = useCartStore();
+  const { getTotalItems, fetchCartItems } = useCartStore();
   const totalItems = getTotalItems();
+
+  useEffect(() => {
+    fetchCartItems();
+  }, []);
 
   return (
     <Tabs
@@ -13,6 +18,10 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#3B82F6',
         tabBarInactiveTintColor: '#6B7280',
         headerShown: false,
+        tabBarStyle: {
+          paddingBottom: 8,
+          height: 60,
+        },
       }}
     >
       <Tabs.Screen

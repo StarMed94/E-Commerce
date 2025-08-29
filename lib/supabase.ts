@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -78,13 +78,14 @@ export interface Order {
   user_id: string;
   total_amount: number;
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  shipping_address: Address;
+  shipping_address_id: string;
   payment_status: 'pending' | 'paid' | 'failed';
   payment_method?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
   order_items?: OrderItem[];
+  shipping_address?: Address;
 }
 
 export interface OrderItem {
